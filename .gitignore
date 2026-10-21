@@ -1,0 +1,51 @@
+# ==========================================================================
+# Dependencias
+# Nunca se versionan: se reinstalan con `npm install` a partir de package-lock.json
+# ==========================================================================
+node_modules/
+
+# ==========================================================================
+# Variables de entorno  (REGLA CRÍTICA DE SEGURIDAD)
+# .env contiene credenciales reales de MySQL, la pasarela de pagos, la API de
+# DNI y el servidor de correo. Si se sube a GitHub, el secreto queda publico
+# de forma permanente (el historial no se puede borrar de forma fiable).
+# El archivo .env.example sí se versiona: es la plantilla sin secretos.
+# ==========================================================================
+.env
+.env.local
+.env.*.local
+
+# ==========================================================================
+# Archivos generados en tiempo de ejecucion
+# ==========================================================================
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ==========================================================================
+# Archivos subidos por el administrador (imagenes de productos)
+# En desarrollo se guardan en disco (storage/). En produccion el adaptador
+# de almacenamiento usara un bucket externo, pero la carpeta se ignora igual.
+# ==========================================================================
+storage/
+
+# ==========================================================================
+# Sistema operativo y editores
+# ==========================================================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ==========================================================================
+# Pruebas y cobertura
+# ==========================================================================
+coverage/
+.nyc_output/
+
+# ==========================================================================
+# Temporales
+# ==========================================================================
+*.tmp
