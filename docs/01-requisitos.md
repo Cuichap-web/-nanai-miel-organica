@@ -1,9 +1,16 @@
 # 01 — Requisitos del Sistema
 
 **Proyecto:** NANAI Miel Orgánica
-**Versión del documento:** 1.0 (Fase 1 — Especificación)
-**Estado:** En revisión
+**Versión del documento:** 1.1 (Fase 1 — Especificación)
+**Estado:** Aprobado por el solicitante el 21/10/2026
 **Autor:** pnle nanai
+
+**Historial de cambios**
+
+| Versión | Fecha | Cambio |
+|---|---|---|
+| 1.0 | 21/10/2026 | Emisión inicial |
+| 1.1 | 21/10/2026 | Corrección de RN-01/02/03 según revisión: reserva temporal durante el proceso de pago; el descuento definitivo de stock se liga a una **regla** (estado que consume stock) y no a la acción de aprobar. Se añade RNF de coste sin suscripciones obligatorias y RNF de extensibilidad del motor de precios para descuentos/cupones. |
 
 ---
 
@@ -149,8 +156,8 @@ método de pago, agencia de transporte o canal de venta debe poder añadirse
 | RF-014 | Alta | Seleccionar modalidad de entrega | `ENTREGA_LOCAL` o `ENVIO_AGENCIA`; reglas de validación distintas por modalidad |
 | RF-015 | Alta | Calcular el costo de envío | Según zona y modalidad, con umbrales de gratuidad configurables |
 | RF-016 | Alta | Crear el pedido y asignar un código único | Código `NAN-AAAA-NNNNNN` único e irrepetible bajo concurrencia |
-| RF-017 | Alta | Crear una reserva de stock al crear el pedido | La reserva tiene fecha de expiración configurable y afecta el stock disponible |
-| RF-018 | Alta | Liberar automáticamente las reservas expiradas | Proceso programado que cancela el pedido y devuelve el stock |
+| RF-017 | Alta | Crear una **reserva temporal de stock** que cubra el proceso de pago | La reserva se crea al crear el pedido, tiene fecha de expiración configurable y reduce el stock *disponible* (no el stock físico) |
+| RF-018 | Alta | Liberar automáticamente las reservas expiradas | Proceso programado que cancela el pedido y devuelve el stock a disponible |
 
 ### 5.4 Pagos
 
@@ -299,6 +306,9 @@ método de pago, agencia de transporte o canal de venta debe poder añadirse
 | RNF-028 | Convenciones de código automáticas y verificación antes de cada commit |
 | RNF-029 | Pruebas unitarias para servicios críticos (cálculo de totales, máquina de estados, stock) |
 | RNF-030 | Documentación progresiva y actualizada: requisitos, arquitectura, API, BD, seguridad |
+| RNF-041 | **El motor de precios es un servicio aislado** con proveedores de descuento enchufables. En la v1 la lista de proveedores de descuento está vacía, pero la interfaz existe |
+| RNF-042 | Las líneas de pedido almacenan el **snapshot** del precio unitario, del descuento aplicado y del subtotal. Incorporar cupones o promociones después **no** obliga a modificar productos, carrito, pedidos ni pagos, ni a migrar los pedidos históricos |
+| RNF-043 | Cada integración externa (pasarela de pagos, consulta de DNI, correo, almacenamiento) se implementa como un **adaptador con contrato estable**. Cambiar de proveedor no debe afectar a los módulos que lo consumen |
 
 ### 6.5 Usabilidad y compatibilidad
 
@@ -319,6 +329,8 @@ método de pago, agencia de transporte o canal de venta debe poder añadirse
 | RNF-038 | Toda la configuración externa por variables de entorno; ningún valor sensible en el código |
 | RNF-039 | Procedimiento documentado de copia de seguridad de la base de datos |
 | RNF-040 | El proyecto se puede levantar desde cero siguiendo `docs/08-instalacion.md` |
+| RNF-044 | **La v1 no exige planes mensuales, cuotas fijas ni suscripciones obligatorias** de ningún proveedor. Se priorizan opciones con plan gratuito, pago por uso o recursos locales del propio negocio |
+| RNF-045 | Los costos variables por transacción (comisiones de pasarela, créditos de API) se **documentan y se comparan** antes de integrar el proveedor, y quedan registrados en la decisión de arquitectura correspondiente |
 
 ---
 
@@ -335,6 +347,7 @@ método de pago, agencia de transporte o canal de venta debe poder añadirse
 | 7 | **RENIEC no ofrece API pública** | La consulta de DNI usa un intermediario; el adaptador está desacoplado para poder cambiarlo |
 | 8 | **Red university con inspección TLS (proxy Fortinet)** | Las credenciales de terceros viajan a través de un proxy que inspecciona el tráfico: fuera de producción, rotar claves y considerar una red de confianza |
 | 9 | **Boleta interna ≠ comprobante SUNAT** | El sistema no emite comprobantes electrónicos oficiales en la v1 |
+| 10 | **Sin planes mensuales ni suscripciones obligatorias** | En la v1 no se contrata hosting de pago, ni planes de correo, ni almacenamiento cloud de pago, ni servicios con cuota mensual. Se usan recursos locales o planes gratuitos. El único costo recurrente admisible es el que el negocio pueda cancelar sin justificar (p. ej. dominio, y en su momento el hosting real). Las **comisiones por transacción** (pasarela de pagos, créditos de API de DNI) se evalúan y documentan en la Fase de Pagos |
 
 ---
 
@@ -361,20 +374,22 @@ método de pago, agencia de transporte o canal de venta debe poder añadirse
 
 | ID | Regla resumida |
 |---|---|
-| RN-01 | El carrito **no** reserva stock. La reserva nace al crear el pedido. |
-| RN-02 | La reserva expira a los **30 minutos** (configurable) → el pedido se cancela y el stock se libera. |
-| RN-03 | El **stock definitivo** se descuenta solo al aprobar un pedido pagado o al confirmar una venta presencial. |
-| RN-04 | Toda modificación de stock genera un movimiento de inventario trazable. |
-| RN-05 | Todo cambio de estado de pedido se registra en el historial; el estado anterior nunca se sobrescribe sin dejar rastro. |
-| RN-06 | Las transiciones de estado están en una **tabla de la base de datos**: agregar un estado es un `INSERT`, no un cambio de código. |
-| RN-07 | El código de pedido (`NAN-AAAA-NNNNNN`) se genera con un contador bloqueado; nunca con `MAX(id)+1`. |
-| RN-08 | El cliente puede consultar su pedido únicamente con el código, sin credenciales. |
-| RN-09 | Un pago aprobado es idempotente: aplicarlo dos veces no duplica stock ni historial. |
-| RN-10 | La venta presencial usa el mismo inventario y el mismo motor de totales que la venta online. |
-| RN-11 | El motivo del rechazo de un pedido es obligatorio y visible para el cliente. |
-| RN-12 | Los importes son `DECIMAL(10,2)` en PEN e incluyen IGV 18 %. |
-| RN-13 | Los pedidos online y presenciales se distinguen por `tipo_venta` pero comparten la misma tabla de cabecera y detalle. |
-| RN-14 | Los datos de envío (agencia, código, fecha) se registran **fuera** del flujo de venta, en el módulo de entrega. |
+| RN-01 | El carrito es **selección en el navegador**: no crea venta, no reserva stock y no descuenta stock. |
+| RN-02 | Al crear el pedido se crea una **reserva temporal de stock** que cubre el proceso de pago. La reserva caduca a los **30 minutos** (configurable); al expirar, el pedido se cancela y el stock vuelve a estar disponible. |
+| RN-03 | El **descuento definitivo** del stock no está atado a una acción concreta del vendedor, sino a una **regla**: se produce cuando el pedido entra en un estado marcado como `consume_stock` en el catálogo de estados. |
+| RN-04 | Un estado marcado como `libera_stock` devuelve las unidades reservadas al stock disponible. Todo pedido cancelado o desaprobado libera stock. |
+| RN-05 | Toda modificación de stock genera un movimiento de inventario trazable, en la **misma transacción** que la operación que la origina. |
+| RN-06 | Todo cambio de estado de pedido se registra en el historial; el estado anterior nunca se sobrescribe sin dejar rastro. |
+| RN-07 | La máquina de estados se define en **datos**: catálogo de estados + tabla de transiciones. Cada transición declara sus efectos (`consume_stock`, `libera_stock`, `exige_motivo`, `notifica_cliente`, `notifica_vendedor`). Agregar un estado es un `INSERT`, no un despliegue. |
+| RN-08 | Las transiciones inválidas se rechazan; el sistema nunca deja un pedido en un estado inconsistente. |
+| RN-09 | El código de pedido (`NAN-AAAA-NNNNNN`) se genera con un contador bloqueado; nunca con `MAX(id)+1`. |
+| RN-10 | El cliente puede consultar su pedido únicamente con el código, sin credenciales. |
+| RN-11 | Un pago aprobado es idempotente: aplicarlo dos veces no duplica stock ni historial. |
+| RN-12 | La venta presencial usa el mismo inventario y el mismo motor de totales que la venta online, y descuenta stock definitivo en el momento de su confirmación. |
+| RN-13 | El motivo del rechazo de un pedido es obligatorio y visible para el cliente. |
+| RN-14 | Los importes son `DECIMAL(10,2)` en PEN e incluyen IGV 18 %. |
+| RN-15 | Los pedidos online y presenciales se distinguen por `tipo_venta` pero comparten la misma tabla de cabecera y detalle. |
+| RN-16 | Los datos de envío (agencia, código, fecha) se registran **fuera** del flujo de venta, en el módulo de entrega. |
 
 ---
 
@@ -412,8 +427,10 @@ La versión 1 se considera entregada cuando:
 5. El vendedor puede registrar una venta presencial y ver el stock actualizado y una boleta imprimible.
 6. El vendedor puede crear un producto nuevo con precio, stock e imagen **sin tocar código**.
 7. Un pedido no pagado se cancela solo al expirar su reserva y el stock vuelve a estar disponible.
-8. No existe ningún secreto en el repositorio y el historial de Git lo demuestra.
-9. La suite de pruebas de stock concurrente pasa.
+8. El stock solo se descuenta cuando el pedido entra en un estado que consume stock, y ese descuento **es reversible** si el pedido pasa a un estado que libera stock. Cambiar esa asignación es una actualización de datos, no de código.
+9. No existe ningún secreto en el repositorio y el historial de Git lo demuestra.
+10. Ninguna integración de la v1 exige un plan mensual o una suscripción obligatoria.
+11. La suite de pruebas de stock concurrente pasa.
 
 ---
 
