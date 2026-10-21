@@ -1,0 +1,26 @@
+# Normalización de fin de línea.
+# Motivo: en Windows, Git convierte LF a CRLF al guardar en el disco, lo que
+# genera avisos ruidosos y diferencias fantasma entre sistemas. Fijamos LF
+# en el repositorio (formato canónico) y LF también en el checkout, salvo
+# para los archivos de script de Windows que requieren obligatoriamente CRLF.
+
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Documentación y código: siempre UTF-8 sin marcas de orden de bytes
+*.md   text working-tree-encoding=UTF-8
+*.js   text working-tree-encoding=UTF-8
+*.json text working-tree-encoding=UTF-8
+*.sql  text working-tree-encoding=UTF-8
+*.css  text working-tree-encoding=UTF-8
+*.html text working-tree-encoding=UTF-8
+
+# Archivos binarios: Git no debe intentar convertirlos
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ico  binary
+*.woff2 binary
