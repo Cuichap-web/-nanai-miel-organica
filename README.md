@@ -43,14 +43,30 @@ Decisiones con su justificación completa: [`docs/decisiones/`](docs/decisiones/
 
 | Documento | Contenido |
 |---|---|
-| [`01-requisitos.md`](docs/01-requisitos.md) | Alcance, RF-001…RF-067, RNF-001…RNF-040, restricciones, supuestos |
-| `02-actores-y-casos-de-uso.md` | Actores, CU-01…CU-2x, matriz de permisos |
-| `03-reglas-de-negocio.md` | RN-01…RN-xx, máquina de estados, reglas de stock y reserva |
-| `04-arquitectura.md` | Capas, estructura de carpetas, flujo de una petición |
-| `05-modelo-de-datos.md` | Modelo Entidad-Relacional, DDL, índices, procedimientos |
-| `06-api.md` | Endpoints, contratos, catálogo de errores |
-| `07-seguridad.md` | Modelo de amenazas y controles |
-| `08-instalacion.md` | Requisitos y puesta en marcha |
+| [`01-requisitos.md`](docs/01-requisitos.md) | Alcance, RF-001…RF-067, RNF-001…RNF-045, restricciones, supuestos |
+| [`02-actores-y-casos-de-uso.md`](docs/02-actores-y-casos-de-uso.md) | Actores, CU-01…CU-38, matriz de permisos |
+| [`03-reglas-de-negocio.md`](docs/03-reglas-de-negocio.md) | RN-01…RN-16, máquina de estados, reglas de stock y reserva |
+| [`04-arquitectura.md`](docs/04-arquitectura.md) | Capas, estructura de carpetas, flujo de una petición |
+| [`05-modelo-de-datos.md`](docs/05-modelo-de-datos.md) | Modelo Entidad-Relacional, DDL, índices, procedimientos |
+| [`06-api.md`](docs/06-api.md) | Endpoints, contratos, catálogo de errores |
+| [`07-seguridad.md`](docs/07-seguridad.md) | Modelo de amenazas STRIDE y controles |
+| [`08-instalacion.md`](docs/08-instalacion.md) | Requisitos y puesta en marcha |
+
+### Decisiones registradas (ADR)
+
+| ADR | Decisión |
+|---|---|
+| [ADR-001](docs/decisiones/ADR-001-stack-backend.md) | Stack backend: Express 5 + ESM + Argon2id + Zod |
+| [ADR-002](docs/decisiones/ADR-002-arquitectura-por-capas.md) | Arquitectura por capas (MVC extendido) |
+| [ADR-003](docs/decisiones/ADR-003-autenticacion-sesiones.md) | Autenticación por sesiones en servidor |
+| [ADR-004](docs/decisiones/ADR-004-motor-de-precios.md) | Motor de precios con IGV incluido y extensible |
+| [ADR-005](docs/decisiones/ADR-005-stock-por-regla.md) | Stock por regla: dos libros y punto único de consumo |
+| [ADR-006](docs/decisiones/ADR-006-maquina-de-estados-por-datos.md) | Máquina de estados por datos |
+| [ADR-007](docs/decisiones/ADR-007-adaptadores.md) | Adaptadores para integraciones externas |
+| [ADR-008](docs/decisiones/ADR-008-stored-procedures.md) | Stored Procedures como vía de acceso a datos |
+| [ADR-009](docs/decisiones/ADR-009-registro-npm-y-proxy-fortinet.md) | Registro npm por mirror y proxy Fortinet |
+| [ADR-010](docs/decisiones/ADR-010-checkout-invitado.md) | Checkout como invitado y consulta por código |
+| [ADR-011](docs/decisiones/ADR-011-medios-de-pago.md) | Medios de pago v1: tarjeta y pago móvil verificado |
 
 ---
 

@@ -107,24 +107,26 @@ miel nanai/
 │   │   ├── auth.js          # Protección de rutas
 │   │   ├── validate.js      # Wrapper con Zod
 │   │   ├── errorHandler.js  # Manejador central
-│   │   ├ rateLimiter.js
-│   │   └── notFound.js
-│   �tagirns
+│   │   ├── rateLimiter.js   # Límite de peticiones
+│   │   └── notFound.js      # 404
 │   ├── validators/
 │   ├── utils/
+│   │   ├── logger.js        # Logger (pino)
+│   │   ├── money.js         # Helpers de DECIMAL
+│   │   └── errors.js        # Fábrica de AppError
 │   ├── integrations/
 │   │   ├── payments/        # Adapter pasarela
 │   │   ├── dni/             # Adapter consulta DNI
 │   │   ├── mail/            # Adapter correo
-│   │   �taginst storage/      # Adapter almacenamiento
+│   │   └── storage/         # Adapter almacenamiento
 │   ├── jobs/
 │   │   └── expirar-reservas.js
-│   └── views/               # No se usará en la v1; se opta for HTML estatico / JS modular
+│   └── views/               # No se usará en la v1; se opta por HTML estático / JS modular
 ├── public/
 │   ├── css/
 │   ├── js/
 │   ├── images/              # imágenes estáticas
-│   ├# index.html
+│   ├── index.html
 │   ├── admin/               # Panel administrativo
 │   └── assets/
 └── storage/                 # uploads dev (gitignored)
@@ -220,7 +222,7 @@ Todo lo sensible va en `.env`. Se valida con **Zod** al arrancar (`src/config/en
 
 | Variable | Tipo | Requisito | Notas |
 |---|---|------|---}
-| `NODE_ENV` | enum('development','production') | Obligatorio | Define exposición de errores |
+| `NODE_ENV` | enum('development','test','production') | Obligatorio | Define exposición de errores |
 | `PORT` | number | Obligatorio | Puerto del servidor |
 | `APP_URL` | url | Obligatorio | URL base para enlaces de correo/panel |
 | `DB_HOST` | string | Obligatorio | Host MySQL |
@@ -231,19 +233,19 @@ Todo lo sensible va en `.env`. Se valida con **Zod** al arrancar (`src/config/en
 | `SESSION_SECRET` | string (min 32) | Obligatorio | Secreto para sesiones |
 | `SESSION_NAME` | string | Obligatorio | Nombre de cookie no descriptivo |
 | `RESERVA_TTL_MINUTOS` | number (default 30) | Obligatorio | TTL de reserva |
-| `BCRYPT_ARGON2_OPTIONS` | object/string | Opcional | Parámetros Argon2id |
+| `ARGON2_OPTIONS` | object/string | Opcional | Parámetros Argon2id (memoria, iteraciones) |
 | `PAGOS_PROVEEDOR` | enum | Opcional | `culqi` / `izipay` / `manual` / `test` |
 | `PAGOS_API_KEY` | string | Opcional (luego) | Solo backend, nunca frontend |
-| `PAGOS_WEBHOOK_SECRET` | string | Opcional (l)
-    `PAGOS_VERIFICACION_CRUZADA` | boolean | Opcional (luego) | Verificar estado real |
+| `PAGOS_WEBHOOK_SECRET` | string | Opcional (luego) | Firma del webhook |
+| `PAGOS_VERIFICACION_CRUZADA` | boolean | Opcional (luego) | Verificar estado real |
 | `DNI_PROVEEDOR` | string | Opcional | Adaptador de consulta DNI |
 | `DNI_API_KEY` | string | Opcional | Solo backend |
 | `MAIL_HOST/PORT/USER/PASS/FROM` | varios | Opcional | SMTP |
 | `STORAGE_TYPE` | enum('local','cloud') | Opcional | local hoy, cloud mañana |
 | `RATE_LIMIT_WINDOW_MS` | number | Opcional | Ventana de rate limit |
-| `LOG_LEVEL` | enum('debug','info','warn','error') | Opciple (default `info`) | Logger pino |
+| `LOG_LEVEL` | enum('debug','info','warn','error') | Opcional (default `info`) | Logger pino |
 
-`.env.example` **sí** se versiona. `.env** **no** se versiona.
+`.env.example` **sí** se versiona. `.env` **no** se versiona.
 
 ---
 
@@ -263,7 +265,7 @@ Todo lo sensible va en `.env`. Se valida con **Zod** al arrancar (`src/config/en
 | **Error redaction** | Manejador central elimina datos sensibles. |
 | **Privilegios mínimos** | Usuario MySQL `nanai_app` con `SELECT, INSERT, UPDATE, DELETE, EXECUTE`. **No** `DROP, CREATE, ALTER, GRANT`. |
 | **Webhooks** | Firma verificada. `provider_event_id` único. Verificación cruzada. |
-| **Desacoplamiento** | Integraciones con contrato. Crendenciales no en frontend. |
+| **Desacoplamiento** | Integraciones con contrato. Credenciales no en frontend. |
 
 ---
 
@@ -271,31 +273,36 @@ Todo lo sensible va en `.env`. Se valida con **Zod** al arrancar (`src/config/en
 
 | Patrón | Uso | Razón |
 |---|---|---|
-| **Repository/Data Access** | `src/models/` | Aísla SQL/SP del resto |
-| **Service Layer** | `src/services/` | Encapsula lógica de negocio |
-| **Adapter/Port** | `src/integrations/*/` | Cambiar proveedor sin reescribir negocio |
-| **DTO/Contract** | `src/validators/` + respuestas formateadas | Contratos claros |
-| **Error Handling](#6-manejador-central-de-errores) | `AppError` + `errorHandler` | Centralizado, consistente |
-| **Dependency Injection (ligero)** | Config por módulo | Fácil de mockear en pruebas |
-| **Transactional Script** | Servicios con `conn.beginTransaction()` | Suficiente para monolito modular |
-| **Immutable Audit Trail] | `order_status_history`, `inventory_movements` | Trazabilidad sin borrados |
-| **Idempotent Operations]` | Webhooks, crear pedido | Evitar duplicados |
+| **Repositorio / Acceso a datos** | `src/models/` | Aísla el SQL/SP del resto |
+| **Capa de Servicios** | `src/services/` | Encapsula la lógica de negocio |
+| **Adaptador / Puerto** | `src/integrations/*/` | Cambiar de proveedor sin reescribir el negocio |
+| **Contrato (DTO)** | `src/validators/` + respuestas formateadas | Contratos claros y verificables |
+| **Manejo de errores** ([ver §6](#6-manejador-central-de-errores)) | `AppError` + `errorHandler` | Centralizado, consistente |
+| **Inyección de dependencias (ligera)** | Configuración por módulo | Fácil de sustituir en pruebas |
+| **Script transaccional** | Servicios con `conn.beginTransaction()` | Suficiente para un monolito modular |
+| **Auditoría inmutable** | `order_status_history`, `inventory_movements` | Trazabilidad sin borrados |
+| **Operaciones idempotentes** | Webhooks, creación de pedido | Evitar duplicados |
 
 ---
 
-##tag 10. ADRs previstos
+## 10. Decisiones registradas (ADR)
 
-| ADR | Título | Estado
+La bitácora completa de decisiones está en [`docs/decisiones/`](decisiones/). Cada ADR documenta el contexto, la decisión, las alternativas descartadas y las consecuencias.
+
+| ADR | Título | Archivo |
 |---|---|---|
-| ADR-001 | Stack backend: Express 5 + ESM + @node-rs/argon2 + zod | Aprobado (ya registrado) |
-| ADR-002 | Autenticación: sesiones en servidor + MySQL store | Aprobado (ya registrado) |
-| ADR-003 | Precio con IGV 18% incluido | Aprobado (ya registrado) |
-| ADR-004 | Medios de pago v1: Tarjeta + Yape/Plin/transferencia manual | Aprobado (ya registrado) |
-| ADR-005 | Registro npm: npmmirror ahora + CA raíz después | Aprobado (ya registrado) |
-| ADR-006 | Reserva temporal durante el proceso de pago, descuento definitivo al pasar to APROBADO | Pendiente a revisarse (listo) |
-| ADR-007 & extentions | Adaptadores para integraciones externas / motor de precios extensible (descuentos/coupónnes) | Pendiente |
-| ADR-008 | Stored Procedures as primary data access | Pending |
+| ADR-001 | Stack backend: Express 5 + ESM + Argon2id + Zod | [`ADR-001-stack-backend.md`](decisiones/ADR-001-stack-backend.md) |
+| ADR-002 | Arquitectura por capas (MVC extendido) | [`ADR-002-arquitectura-por-capas.md`](decisiones/ADR-002-arquitectura-por-capas.md) |
+| ADR-003 | Autenticación por sesiones en servidor | [`ADR-003-autenticacion-sesiones.md`](decisiones/ADR-003-autenticacion-sesiones.md) |
+| ADR-004 | Motor de precios con IGV incluido y extensible | [`ADR-004-motor-de-precios.md`](decisiones/ADR-004-motor-de-precios.md) |
+| ADR-005 | Stock por regla: dos libros y punto único de consumo | [`ADR-005-stock-por-regla.md`](decisiones/ADR-005-stock-por-regla.md) |
+| ADR-006 | Máquina de estados por datos | [`ADR-006-maquina-de-estados-por-datos.md`](decisiones/ADR-006-maquina-de-estados-por-datos.md) |
+| ADR-007 | Adaptadores para integraciones externas | [`ADR-007-adaptadores.md`](decisiones/ADR-007-adaptadores.md) |
+| ADR-008 | Stored Procedures como vía principal de acceso a datos | [`ADR-008-stored-procedures.md`](decisiones/ADR-008-stored-procedures.md) |
+| ADR-009 | Registro npm por mirror y proxy Fortinet | [`ADR-009-registro-npm-y-proxy-fortinet.md`](decisiones/ADR-009-registro-npm-y-proxy-fortinet.md) |
+| ADR-010 | Checkout como invitado y consulta por código | [`ADR-010-checkout-invitado.md`](decisiones/ADR-010-checkout-invitado.md) |
+| ADR-011 | Medios de pago v1: tarjeta y pago móvil verificado | [`ADR-011-medios-de-pago.md`](decisiones/ADR-011-medios-de-pago.md) |
 
 ---
 
-> **Siguiente paso:** `05-modelo-de-datos.md`, donde se define el esquema completo, índices justificados, relaciones, y los procedimientos almacenados previstos.
+> **Siguiente paso:** [`05-modelo-de-datos.md`](05-modelo-de-datos.md), donde se define el esquema completo, índices justificados, relaciones y los procedimientos almacenados previstos.

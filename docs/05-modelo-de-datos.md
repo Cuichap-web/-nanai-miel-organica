@@ -69,7 +69,7 @@ erDiagram
   ROLES ||--o{ ROLE_PERMISSIONS : contiene
   PERMISSIONS ||--o{ ROLE_PERMISSIONS : asigna
 
-  SETTINGS ||--|| none : config
+  SETTINGS }o--|| none : config
 ```
 
 ---
@@ -437,7 +437,7 @@ Venta presencial
 | `tipo` | ENUM('PEDIDO_REGISTRADO','PAGO_CONFIRMADO','PEDIDO_APROBADO','PEDIDO_DESAPROBADO','PEDIDO_EN_PREPARACION','PEDIDO_ENVIADO','PEDIDO_RECIBIDO','RECUPERACION_CONTRASEÑA','PEDIDO_NUEVO_VENDEDOR','PAGO_POR_VERIFICAR') | NO | — | |
 | `destinatario_tipo` | ENUM('CLIENTE','VENDEDOR') | NO | — | |
 | `destinatario_email` | VARCHAR(150) | NO | — | Enmascarable |
-| `pedido_id` | BIGINT UNSIGNED | YES | NULL | FK -> `orders(id)' ON DELETE RESTRICT |
+| `pedido_id` | BIGINT UNSIGNED | YES | NULL | FK -> `orders(id)` ON DELETE RESTRICT |
 | `asunto` | VARCHAR(200) | NO | — | |
 | `plantilla` | VARCHAR(100) | NO | — | Nombre de plantilla |
 | `estado` | ENUM('PENDIENTE','ENVIADO','FALLIDO') | NO | 'PENDIENTE' | |
@@ -489,7 +489,7 @@ Se priorizan SP para operaciones críticas (consistencia + concurrencia).
 | `sp_registrar_ingreso_stock` | Ingreso de almacén | Suma a `stock_fisico`, genera movimiento `INGRESO`. |
 | `sp_consultar_stock_disponible` | Calcular `disponible` | `stock_fisico - COALESCE(reservas_vigentes,0)`. Siempre calculado. |
 
-> **¿Por qué SP?** En MySQL 8, los procedimientos almacenados permiten encapsular transacciones, bloquear filas con precisión (`FOR UPDATE`) and mantener reglas consistentes. Además refuerza que **la lógica de negocio se ejecuta en un solo sitio**, en lugar de fragmentarse en múltiples queries.
+> **¿Por qué SP?** En MySQL 8, los procedimientos almacenados permiten encapsular transacciones, bloquear filas con precisión (`FOR UPDATE`) y mantener reglas consistentes. Además refuerza que **la lógica de negocio se ejecuta en un solo sitio**, en lugar de fragmentarse en múltiples queries.
 
 ---
 
@@ -500,24 +500,28 @@ Se priorizan SP para operaciones críticas (consistencia + concurrencia).
 | `idx_orders_codigo` | `orders` | Búsqueda rápida por código (cliente anónimo) |
 | `idx_orders_estado_created` | `orders`(`estado_id`,`created_at`) | Filtrado del panel |
 | `idx_products_cat_act` | `products`(`categoria_id`,`activo`) | Catálogo paginado |
-| `order_reservations`(`estado`,`reserva_expira_en`) | `order_reservations` | Job eficiente |
-| `inventory_movements`(`producto_id`,`fecha`) | `inventory_movements` | Historial por producto |
-| `order_status_history`(`pedido_id`,`fecha_cambio) | `order_status_history` | Historial por pedido |
-| `payments`(`provider_event_id`) | `payments` | Idempotencia webhook |
-| `sessions`(`expires`) | `sessions` | Limpieza |
-| `notifications`(`estado`,`created_at`) | `notifications` | Cola correo |
+| `idx_or_reserva_estado_expira` | `order_reservations`(`estado`,`reserva_expira_en`) | Job eficiente de expiración |
+| `idx_or_reserva_producto` | `order_reservations`(`producto_id`,`estado`) | Cálculo de stock disponible |
+| `idx_inv_mov_producto_fecha` | `inventory_movements`(`producto_id`,`fecha`) | Historial por producto |
+| `idx_os_hist_pedido_fecha` | `order_status_history`(`pedido_id`,`fecha_cambio`) | Historial por pedido |
+| `uq_payments_provider_event` | `payments`(`provider_event_id`) | Idempotencia del webhook |
+| `idx_sessions_expires` | `sessions`(`expires`) | Limpieza |
+| `idx_notif_estado_created` | `notifications`(`estado`,`created_at`) | Cola de correo |
+| `uq_os_transition` | `order_status_transition`(`estado_origen_id`,`estado_destino_id`) | Grafo sin aristas duplicadas |
+| `uq_products_slug` | `products`(`slug`) | URL pública única |
+
 ---
 
 ## 7. Extensibilidad
 
 | Área | Cómo se habilita | Notas |
 |---|---|---|
-| **Descuentos/cupones** | Tabla `discounts`, `order_discounts` | El motor de pricesvazio (\`pricingService`) ya tiene una interfaz. Las líneas ya guardan **snapshot**. Histórico se mantiene. |
-| **Clientes registrados** | Tabla `clients` con `cliente_id` en `orders` | Carrito puede persistir por cliente; consulta por código sigue existiendo. |
-| **Roles y permisos** | `roles`, `role_permissions`, `user_roles` | Ya existe. A implementar en fases posteriores. |
-|tag **Agencias de transporte** | `agencies` | Catálogo administrable. No hay dependencia# en un único proveedor. |
-| **Nuevos medios de pago** | `payments.proveedor` ENUM o tabla | Adaptador interchange is lO. **Comisiones por transacción** se documentan antes. |
-| **Comprobante SUNAT** | `integrations/sunat/` | Módulo independiente. `sales_pos` и `orders` ya llevan datos suficientes. |
+| **Descuentos/cupones** | Tabla `discounts`, `order_discounts` | El motor de precios (`pricingService`) ya tiene la interfaz definida. Las líneas ya guardan **snapshot**. El histórico se mantiene intacto. |
+| **Clientes registrados** | Tabla `clients` con `cliente_id` en `orders` | El carrito puede persistir por cliente; la consulta por código sigue existiendo. |
+| **Roles y permisos** | `roles`, `role_permissions`, `user_roles` | Ya existe el esquema. A implementar en fases posteriores. |
+| **Agencias de transporte** | `agencies` | Catálogo administrable. No hay dependencia de un único proveedor. |
+| **Nuevos medios de pago** | `payments.metodo_pago` ENUM o tabla aparte | El adaptador permite ampliar métodos. **Las comisiones por transacción se documentan antes** de activarlas. |
+| **Comprobante SUNAT** | `integrations/sunat/` | Módulo independiente. `sales_pos` y `orders` ya llevan datos suficientes. |
 | **Storage externo** | `integrations/storage/` | Cambiar `STORAGE_TYPE`. |
 
 ---
@@ -535,4 +539,4 @@ db/
 
 **Orden de ejecución:** `schema.sql` → `procedures/*.sql` → `seed.sql`.
 
-> **Secreto inicial:** El hash de la contraseña del admin no se envía en texto plano. Se genera con **Argon2id** en un script local o se crea a través of `npm run db:seed` después of configurar `.env`.
+> **Secreto inicial:** El hash de la contraseña del admin no se envía en texto plano. Se genera con **Argon2id** en un script local o se crea a través de `npm run db:seed` después de configurar `.env`.

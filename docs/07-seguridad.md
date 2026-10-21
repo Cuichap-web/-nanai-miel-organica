@@ -121,7 +121,7 @@ El código `NAN-2026-000125` es la **única** credencial del cliente. Debilitami
 | **XSS reflejado** | Toda entrada se valida y se escapa. Plantillas con autoescapado. |
 | **CSRF** | Token por sesión en operaciones de escritura del panel + `SameSite=Lax`. |
 | **Clickjacking** | `X-Frame-Options` / `frame-ancestors` en CSP. |
-| **CSP** | Política restrictiva. `script-src 'self'` (+ el dominio del proveedor de pagos si su SDK lo requiere,documentado). **Evitar `unsafe-inline`**. |
+| **CSP** | Política restrictiva. `script-src 'self'` (+ el dominio del proveedor de pagos si su SDK lo requiere, documentado). **Evitar `unsafe-inline`**. |
 
 ### 2.9 Denegación de servicio y abuso
 
@@ -249,7 +249,7 @@ El código `NAN-2026-000125` es la **única** credencial del cliente. Debilitami
 |---|---|---|
 | **Proxy TLS de la red university (Fortinet)** | Las credenciales de terceros (pasarela, DNI) son inspeccionables por el proxy de la red | En desarrollo es aceptable. **En producción, el servidor debe estar fuera de esa red** o tras VPN. Rotar claves. **Pendiente de documentar en el despliegue.** |
 | **Código de pedido como única credencial** | Un atacante con muchos intentos podría adivinar códigos | Rate limiting + enmascarado de PII + respuestas genéricas. Riesgo aceptado para el volumen actual. **Revisar si el volumen crece.** |
-| **Boleta interna no es comprobante SUNAT** | No cumple obligación fiscal formal | Declarado en alcance. Módulo `integrations/sunat/` planificado. **Debeolversolverse antes de vender a empresas que requieran factura.** |
+| **Boleta interna no es comprobante SUNAT** | No cumple obligación fiscal formal | Declarado en alcance. Módulo `integrations/sunat/` planificado. **Debe resolverse antes de vender a empresas que requieran factura.** |
 | **Pago manual no automatizado** | El vendedor debe verificar Yape/Plin a mano | Es la realidad de un emprendimiento pequeño. Escala futura: pasarela que soporte Yape/Plin con webhook. |
 | **Sin 2FA en el panel** | Una contraseña filtrada da acceso total | Rate limiting + Session + política de contraseñas. **2FA es una mejora prioritaria post-v1.** |
 | **Una sola base de datos** | Un error grave afecta todo | Aceptado: el volumen no justifica réplicas ni particionado. **Se revisa si el negocio crece.** |
