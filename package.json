@@ -1,0 +1,52 @@
+{
+  "name": "nanai-miel-organica",
+  "version": "1.0.0",
+  "description": "Plataforma e-commerce y gestión interna NANAI Miel Orgánica",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:migrate": "node db/migrate.js",
+    "db:seed": "node db/seed.js",
+    "db:reset": "node db/reset.js",
+    "db:backup": "node db/backup.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "ecommerce",
+    "honey",
+    "nodejs",
+    "express",
+    "mysql"
+  ],
+  "author": "pnle nanai",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "express-mysql-session": "^3.0.2",
+    "express-rate-limit": "^7.4.0",
+    "express-session": "^1.18.0",
+    "helmet": "^7.1.0",
+    "mysql2": "^3.11.0",
+    "nodemailer": "^6.9.14",
+    "pino": "^9.3.2",
+    "pino-http": "^10.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.3",
+    "pino-pretty": "^11.2.2"
+  }
+}
