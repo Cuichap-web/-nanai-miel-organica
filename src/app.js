@@ -8,6 +8,8 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import healthRoutes from './routes/health.routes.js';
+import catalogRoutes from './routes/catalog.routes.js';
+import ordersRoutes from './routes/orders.routes.js';
 
 const app = express();
 
@@ -20,6 +22,8 @@ app.use(cookieParser());
 app.use(pinoHttp({ logger }));
 
 app.use('/api/v1', healthRoutes);
+app.use('/api/v1', catalogRoutes);
+app.use('/api/v1', ordersRoutes);
 
 app.get('/', (req, res) => {
   res.json({
