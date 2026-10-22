@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ventas POS - NANAI</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Panel NANAI</h1>
+    <nav>
+      <a href="/admin/index.html">Dashboard</a>
+      <a href="/admin/pedidos.html">Pedidos</a>
+      <a href="/admin/pos.html">Ventas POS</a>
+    </nav>
+  </header>
+  <main>
+    <h2>Venta en mostrador</h2>
+    <input id="producto_id" placeholder="ID Producto">
+    <input id="cantidad" type="number" value="1">
+    <input id="precio" placeholder="Precio">
+    <button onclick="agregar()">Agregar</button>
+    <div id="items"></div>
+    <select id="medio">
+      <option value="EFECTIVO">Efectivo</option>
+      <option value="YAPE">Yape</option>
+      <option value="PLIN">Plin</option>
+    </select>
+    <button onclick="vender()">Vender</button>
+    <div id="resultado"></div>
+  </main>
+  <script src="/js/pos.js"></script>
+</body>
+</html>

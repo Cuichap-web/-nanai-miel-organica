@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - NANAI</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>NANAI Miel Orgánica</h1>
+  </header>
+  <main>
+    <h2>Finalizar compra</h2>
+    <form id="form">
+      <input name="nombre" placeholder="Nombre completo" required><br>
+      <input name="telefono" placeholder="Teléfono" required><br>
+      <input name="email" placeholder="Email (opcional)"><br>
+      <select name="modalidad">
+        <option value="ENTREGA_LOCAL">Entrega local</option>
+        <option value="ENVIO_AGENCIA">Envío por agencia</option>
+      </select><br>
+      <input name="direccion" placeholder="Dirección (si entrega local)"><br>
+      <input name="zona_distrito" placeholder="Distrito"><br>
+      <button type="submit">Crear pedido</button>
+    </form>
+    <div id="resultado"></div>
+  </main>
+  <script src="/js/checkout.js"></script>
+</body>
+</html>
